@@ -13,7 +13,7 @@ def get_all_stocks():
     
     all_stocks = []
     start = 0
-    
+    #MOEX выдает информацию порциями
     while True:
         params['start'] = start
         response = requests.get(url, params=params)
@@ -71,21 +71,25 @@ def main():
     
     # Собираем все данные в один DataFrame
     all_data = []
-    
+    successful=0
     # Выгружаем данные по каждой акции
     for i, row in stocks_df.iterrows():
         secid = row['secid']
         name = row.get('shortname', 'N/A')
         
-        print(f"[{i+1}/{len(stocks_df)}] {secid} - {name}")
-        
         data = get_stock_data(secid)
+    
         if data is not None:
+            successful += 1
+            print(f"[{successful}/{len(stocks_df)}] ✓ {secid} - {name}")
             data.to_parquet(f'moex_data/{secid}.parquet', index=False)
             all_data.append(data)
+        else:
+            successful += 1
+            print(f"[{i+1}/{len(stocks_df)}] ✗ {secid} - {name} (нет данных)")
     
-    # Объединяем все данные
     if all_data:
+        
         combined_df = pd.concat(all_data, ignore_index=True)
         
         # Сохраняем в parquet

@@ -9,15 +9,14 @@ plt.style.use('seaborn-v0_8')
 plt.rcParams['figure.figsize'] = (15, 10)
 
 def create_individual_charts(stock_file):
-    """Создает диаграммы для отдельной акции"""
+   #Создает диаграммы для отдельной акции
     try:
-        df = pd.read_csv(stock_file)
+        df = pd.read_parquet(stock_file)
         df['TRADEDATE'] = pd.to_datetime(df['TRADEDATE'])
         df = df.sort_values('TRADEDATE')
         
-        stock_name = os.path.basename(stock_file).replace('.csv', '')
+        stock_name = os.path.basename(stock_file).replace('.parquet', '')
         
-        # Создаем фигуру с несколькими subplots
         fig, axes = plt.subplots(2, 2, figsize=(16, 12))
         fig.suptitle(f'Анализ акции {stock_name}', fontsize=16, fontweight='bold')
         
@@ -42,7 +41,7 @@ def create_individual_charts(stock_file):
         axes[1, 0].set_ylabel('Количество')
         axes[1, 0].grid(True, alpha=0.3)
         
-        # 4. Волатильность (High - Low)
+        # 4. Волатильность
         df['VOLATILITY'] = df['HIGH'] - df['LOW']
         axes[1, 1].bar(df['TRADEDATE'], df['VOLATILITY'], alpha=0.7, color='red')
         axes[1, 1].set_title('Волатильность (High - Low)')
@@ -59,9 +58,8 @@ def create_individual_charts(stock_file):
         print(f"Ошибка при обработке {stock_file}: {e}")
 
 def create_summary_charts(all_data):
-    """Создает сводные диаграммы по всем акциям"""
+   #Создает сводные диаграммы по всем акциям
     
-    # Сводный график доходностей
     plt.figure(figsize=(15, 8))
     
     for stock in all_data['SECID'].unique()[:20]:  # Ограничиваем для читаемости
@@ -106,7 +104,6 @@ def create_summary_charts(all_data):
     plt.close()
 
 def create_correlation_heatmap(all_data):
-    """Создает тепловую карту корреляций"""
     # Выбираем основные акции для корреляции
     top_stocks = all_data['SECID'].value_counts().head(15).index
     
@@ -145,20 +142,20 @@ def main():
     os.makedirs('charts/individual', exist_ok=True)
     os.makedirs('charts/summary', exist_ok=True)
     
-    # Находим все CSV файлы
-    csv_files = glob.glob('moex_data/*.csv')
+    # Находим все parquet файлы
+    parquet_files = glob.glob('moex_data/*.parquet')
     
-    # Убираем stocks_list.csv из обработки
-    csv_files = [f for f in csv_files if 'stocks_list' not in f]
+    # Убираем stocks_list.parquet из обработки
+    parquet_files = [f for f in parquet_files if 'stocks_list' not in f and 'all_stocks_combined' not in f]
     
-    print(f"Найдено файлов с данными: {len(csv_files)}")
+    print(f"Найдено файлов с данными: {len(parquet_files)}")
     
     # Загружаем все данные для сводных графиков
     all_data_list = []
     
-    for file in csv_files:
+    for file in parquet_files:
         try:
-            df = pd.read_csv(file)
+            df = pd.read_parquet(file)
             df['TRADEDATE'] = pd.to_datetime(df['TRADEDATE'])
             all_data_list.append(df)
             
