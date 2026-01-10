@@ -1,5 +1,5 @@
-charts/*
-moex_data/*
+#charts/*
+#moex_data/*
 # Virtual Environment
 venv/
 .env/

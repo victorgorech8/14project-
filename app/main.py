@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse,HTMLResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -12,6 +12,8 @@ from .models import RequestHistory
 from sqlalchemy.orm import Session
 from sklearn.cluster import KMeans
 from sqlalchemy import desc
+from pathlib import Path
+import os
 Base.metadata.create_all(bind=engine)
 class PortfolioPipeline:
     def __init__(self, decay_factor=0.95, n_clusters=8, n_iterations=10):
@@ -244,3 +246,26 @@ async def get_history(
     
     return response
 
+@app.get("/eda1", response_class=HTMLResponse)
+async def get_html_file():
+    current_dir = Path(__file__).parent
+    html_path = current_dir.parent / "EDA.html"
+  
+    return FileResponse(html_path, media_type="text/html")
+@app.get("/eda2", response_class=HTMLResponse)
+async def get_html_file():
+    current_dir = Path(__file__).parent
+    html_path = current_dir.parent / "EDAnew.html"
+
+    return FileResponse(html_path, media_type="text/html")
+
+@app.get("/pres")
+async def get_presentation():
+    current_dir = Path(__file__).parent
+    pptx_path = current_dir.parent / "Презентация.pptx"
+    
+    return FileResponse(
+        pptx_path,
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        filename="presentation.pptx"
+    )
