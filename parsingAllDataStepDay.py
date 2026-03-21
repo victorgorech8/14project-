@@ -9,15 +9,11 @@ def get_all_stocks():
     """Получить список всех акций"""
     print("Получаем список акций...")
     url = "https://iss.moex.com/iss/securities.json"
-    params = {
-        'engine': 'stock',
-        'market': 'shares',
-        'is_trading': 1
-    }
+    params = {'engine': 'stock', 'market': 'shares', 'is_trading': 1}
     
     all_stocks = []
     start = 0
-    
+    #MOEX выдает информацию порциями
     while True:
         params['start'] = start
         response = requests.get(url, params=params)
@@ -28,14 +24,11 @@ def get_all_stocks():
             break
             
         all_stocks.extend(stocks)
-        
+        start += 100
         if len(stocks) < 100:
             break
-            
-        start += 100
     
     df = pd.DataFrame(all_stocks, columns=data['securities']['columns'])
-    # Фильтруем только обыкновенные и привилегированные акции
     stocks_df = df[df['type'].isin(['common_share', 'preferred_share'])]
     return stocks_df
 
@@ -47,13 +40,7 @@ def get_stock_data(secid):
     start = 0
     
     while True:
-        params = {
-            'from': '1990-01-01',
-            'till': '2099-12-31',
-            'interval': 24,
-            'start': start
-        }
-        
+        params = {'from': '1990-01-01', 'till': '2099-12-31', 'interval': 24, 'start': start}
         response = requests.get(url, params=params)
         data = response.json()
         
@@ -63,12 +50,13 @@ def get_stock_data(secid):
             
         all_data.extend(history_data)
         start += 100
-        
         if len(history_data) < 100:
             break
     
     if all_data:
-        return pd.DataFrame(all_data, columns=data['history']['columns'])
+        df = pd.DataFrame(all_data, columns=data['history']['columns'])
+        df['ticker'] = secid  # Добавляем тикер
+        return df
     return None
 
 def main():
@@ -78,21 +66,41 @@ def main():
     stocks_df = get_all_stocks()
     print(f"Найдено акций: {len(stocks_df)}")
     
-    # Сохраняем список акций
-    stocks_df.to_csv('moex_data/stocks_list.csv', index=False)
+    # Сохраняем список акций в parquet
+    stocks_df.to_parquet('moex_data/stocks_list.parquet', index=False)
     
+    # Собираем все данные в один DataFrame
+    all_data = []
+    successful=0
     # Выгружаем данные по каждой акции
     for i, row in stocks_df.iterrows():
         secid = row['secid']
         name = row.get('shortname', 'N/A')
         
-        print(f"[{i+1}/{len(stocks_df)}] {secid} - {name}")
-        
         data = get_stock_data(secid)
+    
         if data is not None:
-            data.to_csv(f'moex_data/{secid}.csv', index=False)
+            successful += 1
+            print(f"[{successful}/{len(stocks_df)}] ✓ {secid} - {name}")
+            data.to_parquet(f'moex_data/{secid}.parquet', index=False)
+            all_data.append(data)
+        else:
+            successful += 1
+            print(f"[{i+1}/{len(stocks_df)}] ✗ {secid} - {name} (нет данных)")
+    
+    if all_data:
+        
+        combined_df = pd.concat(all_data, ignore_index=True)
+        
+        # Сохраняем в parquet
+        combined_df.to_parquet('moex_data/all_stocks.parquet', index=False)
+        
+        print(f"\nОбъединенный файл создан: {len(combined_df):,} строк")
+        print(f"Тикеров: {combined_df['ticker'].nunique()}")
+        print(f"Период: {combined_df['TRADEDATE'].min()} - {combined_df['TRADEDATE'].max()}")
     
     print("Выгрузка завершена! Данные в папке 'moex_data'")
 
 if __name__ == "__main__":
     main()
+
