@@ -1,0 +1,14 @@
+.git
+.venv
+venv
+env
+__pycache__
+*.pyc
+.pytest_cache
+.cache
+moex_data
+analysis/charts
+analysis/notebooks
+data
+models
+*.ipynb_checkpoints

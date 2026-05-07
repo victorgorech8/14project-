@@ -1,5 +1,7 @@
-#charts/*
-#moex_data/*
+# Generated/local data
+moex_data/
+data/
+analysis/charts/generated/
 # Virtual Environment
 venv/
 .env/

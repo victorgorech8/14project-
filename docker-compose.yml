@@ -1,0 +1,40 @@
+services:
+  api:
+    build: .
+    container_name: moex-portfolio-api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: sqlite:////data/portfolio.db
+      FINAM_TOKEN: ${FINAM_TOKEN:-}
+      FINAM_ACCOUNT_ID: ${FINAM_ACCOUNT_ID:-}
+      ENABLE_REAL_TRADING: ${ENABLE_REAL_TRADING:-false}
+    volumes:
+      - portfolio_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:10.4.3
+    container_name: moex-portfolio-grafana
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_INSTALL_PLUGINS: marcusolsson-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboard_dynamic_portfolio.json:/var/lib/grafana/dashboards/dashboard_dynamic_portfolio.json:ro
+    restart: unless-stopped
+
+volumes:
+  portfolio_data:
+  grafana_data:

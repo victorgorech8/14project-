@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: MOEX dashboards
+    orgId: 1
+    folder: MOEX Portfolio
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
